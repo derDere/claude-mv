@@ -136,6 +136,10 @@ claude-mv [OLD] [NEW] [options]
 
 Other flags:
 
+- `--merge` — if NEW already exists, merge OLD into it without prompting
+  (per-file SHA-256 compare: identical files are skipped, different ones
+  are overwritten, new files are moved over). Without this flag, the tool
+  asks `[y/N]` before merging.
 - `--move-anyway` — proceed even if no Claude storage was found for OLD
   (the tool will otherwise ask you for confirmation in that case)
 - `-v` / `--verbose` — show extra detail (e.g. per-file scan hits)
@@ -211,6 +215,49 @@ So `C:\Users\me\my_project.v2` becomes `C--Users-me-my-project-v2`.
 This means certain different paths collide (`foo_bar`, `foo-bar`, `foo.bar`
 all encode to `foo-bar`). `claude-mv` checks for this collision before
 doing anything destructive and aborts cleanly.
+
+---
+
+## Recovering from a failed move
+
+If a `claude-mv` run dies mid-way (typical cause: a single file in the
+source can't be moved because a process has it locked — Git background
+maintenance, Windows Defender, an IDE indexer, etc.), you end up with a
+half-and-half state: most of the project sitting in NEW, a few stragglers
+left in OLD, while Claude's state files already point at NEW. The tool
+handles this without drama:
+
+1. **It's idempotent.** Run `claude-mv OLD NEW` again. Each stage detects
+   whether it already ran (`~/.claude.json` already keyed to NEW, storage
+   already renamed, history.jsonl already patched) and reports
+   `already done` instead of failing.
+2. **It can finish the move.** When it sees NEW already exists, it asks
+   `Merge OLD into existing NEW? [y/N]`. Answer `y` (or use `--merge` for
+   non-interactive runs) and it will:
+   - hash every file in OLD with SHA-256 and compare it to the equivalent
+     in NEW;
+   - **skip** files that are byte-identical (just deleting the OLD copy);
+   - **overwrite** files that differ;
+   - **move** files that don't exist in NEW yet;
+   - report a count of each at the end.
+3. **One bad file does not stop the rest.** Per-file moves are isolated;
+   any file that still can't be moved is listed as a warning, and the
+   other files still go through. You can fix the offending file (close
+   the locking process) and run `claude-mv OLD NEW --merge` again to
+   pick up the remaining one.
+
+Example recovery flow:
+
+```bash
+# First run dies on a locked .git/objects/... file
+claude-mv ~/projects/big-repo ~/projects/big-repo-renamed
+# ERROR: move failed: [WinError 5] Access denied: '....git/objects/....'
+
+# You close whatever is holding that file (e.g. stop git fsmonitor).
+# Re-run with merge — same arguments, plus --merge to skip the prompt:
+claude-mv ~/projects/big-repo ~/projects/big-repo-renamed --merge
+# Stages 2-4 report 'already done', stage 6 finishes the few stragglers.
+```
 
 ---
 

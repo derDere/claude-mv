@@ -50,6 +50,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="If no Claude storage exists for OLD, move the folder without prompting.",
     )
     p.add_argument(
+        "--merge",
+        action="store_true",
+        help=(
+            "If NEW already exists, merge OLD into it without prompting. "
+            "Identical files (SHA-256) are skipped, different files are "
+            "overwritten. Useful to resume after a partial-failure run."
+        ),
+    )
+    p.add_argument(
         "-v", "--verbose", action="store_true", help="More detailed output."
     )
     return p
@@ -71,6 +80,7 @@ def main(argv: list[str] | None = None) -> int:
         fix_only=args.fix,
         dry_run=args.dry_run,
         move_anyway=args.move_anyway,
+        merge=args.merge,
         verbose=args.verbose,
     )
 
