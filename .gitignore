@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+.env
+
+# Local Claude Code session data — not part of the project
+.claude/
+.temp/
+
+# Tool's own backups (in case someone tests in repo)
+*.claude-mv.bak
+*.claude-mv.tmp
