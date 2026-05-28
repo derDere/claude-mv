@@ -20,13 +20,18 @@ of Claude Code's references in lockstep.
 
 ## Quick start
 
-The easiest way is `uvx` — it pulls the tool straight from GitHub and runs it
-without installing anything globally:
+You need [`uv`](https://github.com/astral-sh/uv) installed (it ships
+`uvx`). The tool itself has no other dependencies — `uvx` pulls and runs
+it straight from GitHub.
+
+The simplest invocation:
 
 ```bash
 uvx --from git+https://github.com/derDere/claude-mv.git claude-mv \
     "C:\old\project\path" "C:\new\project\path"
 ```
+
+For something shorter, see **[Installing as a global `claude-mv` command](#installing-as-a-global-claude-mv-command)** below.
 
 You can also clone and run locally:
 
@@ -39,6 +44,80 @@ python -m claude_mv "C:\old\project\path" "C:\new\project\path"
 **Close all Claude Code instances first.** The tool will refuse to run
 otherwise — you don't want Claude to modify its state files while we're
 mid-migration.
+
+---
+
+## Installing as a global `claude-mv` command
+
+Typing `uvx --from git+https://github.com/derDere/claude-mv.git claude-mv …`
+every time is no fun. The repo ships three tiny wrapper scripts that
+forward all arguments to `uvx`. Pick the one for your shell, drop it
+somewhere on your `PATH`, and you can just say `claude-mv …`.
+
+The wrappers live in the repo root: [`claude-mv.sh`](claude-mv.sh)
+(bash / zsh), [`claude-mv.ps1`](claude-mv.ps1) (PowerShell),
+[`claude-mv.bat`](claude-mv.bat) (cmd.exe). Each one is two lines and
+just calls `uvx`.
+
+### Windows (PowerShell)
+
+1. Download [`claude-mv.ps1`](claude-mv.ps1) (or the whole repo).
+2. Put it in any folder that's on your `PATH` — for example
+   `C:\Users\<you>\bin\` after adding that folder to your user `PATH`.
+3. PowerShell may refuse to run unsigned scripts. If so, allow local
+   scripts once:
+   ```powershell
+   Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+   ```
+4. Now you can call it from anywhere:
+   ```powershell
+   claude-mv "C:\old\project" "C:\new\project"
+   ```
+
+### Windows (cmd.exe)
+
+1. Download [`claude-mv.bat`](claude-mv.bat).
+2. Drop it into a `PATH` folder.
+3. Use it from `cmd`:
+   ```cmd
+   claude-mv "C:\old\project" "C:\new\project"
+   ```
+
+### Linux / macOS (bash / zsh)
+
+1. Download [`claude-mv.sh`](claude-mv.sh).
+2. Put it in a `PATH` folder under the name `claude-mv` (no extension).
+   `~/.local/bin/` is a good choice on Linux; `/usr/local/bin/` works on
+   both:
+   ```bash
+   sudo curl -L -o /usr/local/bin/claude-mv \
+       https://raw.githubusercontent.com/derDere/claude-mv/main/claude-mv.sh
+   sudo chmod +x /usr/local/bin/claude-mv
+   ```
+3. Or, if you already cloned the repo, symlink it:
+   ```bash
+   chmod +x ./claude-mv.sh
+   ln -s "$(pwd)/claude-mv.sh" ~/.local/bin/claude-mv
+   ```
+4. Use it from anywhere:
+   ```bash
+   claude-mv ~/projects/old-name ~/projects/new-name
+   ```
+
+### Linux / macOS — alias (no file needed)
+
+If you'd rather not put a file on disk, a shell alias does the same job.
+Add this line to your `~/.bashrc` or `~/.zshrc`:
+
+```bash
+alias claude-mv='uvx --from git+https://github.com/derDere/claude-mv.git claude-mv'
+```
+
+Then `source` the file (or open a new terminal) and `claude-mv` is
+available globally.
+
+> Note: aliases only work in interactive shells — scripts won't see them.
+> Use the wrapper file approach if you need that.
 
 ---
 
@@ -63,31 +142,32 @@ Other flags:
 
 ### Examples
 
+The examples below use the short `claude-mv` form (wrapper script or
+alias installed — see the previous section). Without a wrapper, prefix
+every command with `uvx --from git+https://github.com/derDere/claude-mv.git`.
+
 Move a Windows project:
 
 ```powershell
-uvx --from git+https://github.com/derDere/claude-mv.git claude-mv `
-    "C:\Users\me\src\old-name" "C:\Users\me\src\new-name"
+claude-mv "C:\Users\me\src\old-name" "C:\Users\me\src\new-name"
 ```
 
 Preview the changes first:
 
 ```bash
-uvx --from git+https://github.com/derDere/claude-mv.git claude-mv --dry-run \
-    ~/projects/foo ~/projects/foo-renamed
+claude-mv --dry-run ~/projects/foo ~/projects/foo-renamed
 ```
 
 You already moved the folder manually and want Claude to find it again:
 
 ```bash
-uvx --from git+https://github.com/derDere/claude-mv.git claude-mv --fix \
-    ~/projects/foo ~/projects/foo-renamed
+claude-mv --fix ~/projects/foo ~/projects/foo-renamed
 ```
 
 See what Claude is currently tracking:
 
 ```bash
-uvx --from git+https://github.com/derDere/claude-mv.git claude-mv --list
+claude-mv --list
 ```
 
 ---
